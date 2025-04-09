@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using TMPro;
 using UnityEngine;
 
 public class Movement : MonoBehaviour
@@ -13,7 +13,9 @@ public class Movement : MonoBehaviour
     [SerializeField] float friction;
     [SerializeField] float brakeForce;
     [SerializeField] float frenoDeMano;
-    private TrailRenderer trail;
+    public TextMeshProUGUI mensajeFin;
+
+    public TrailRenderer trail;
     private Rigidbody rb;
 
     private bool accelerating;
@@ -21,18 +23,16 @@ public class Movement : MonoBehaviour
     private bool frenoMano;
 
     private float rotationInput;
-    private float rotationFrenoManoInput;
-
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        trail = GetComponent<TrailRenderer>();
     }
 
     void Update()
     {
         movementWithInput();
+       
     }
 
     void FixedUpdate()
@@ -40,39 +40,25 @@ public class Movement : MonoBehaviour
         MovementPhysics();
     }
 
-    
     void movementWithInput()
     {
         rotationInput = 0;
 
         accelerating = Input.GetKey(KeyCode.W);
-
         decelerating = Input.GetKey(KeyCode.S);
 
-        if (Input.GetKey(KeyCode.A))
-        {
-            rotationInput = -1;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            rotationInput = 1;
-        }
+        if (Input.GetKey(KeyCode.A)) rotationInput = -1;
+        if (Input.GetKey(KeyCode.D)) rotationInput = 1;
+
         frenoMano = Input.GetKey(KeyCode.Space);
-        
-
-
     }
 
-    // Controls the movement physics and applies friction
     void MovementPhysics()
     {
         rb.AddTorque(rotationInput * rotationSpeed * transform.up * Time.fixedDeltaTime);
-       
 
-
-        Vector3 forwardDirection = transform.forward; 
-
-        Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity); 
+        Vector3 forwardDirection = transform.forward;
+        Vector3 localVelocity = transform.InverseTransformDirection(rb.linearVelocity);
 
         if (accelerating)
         {
@@ -80,7 +66,7 @@ public class Movement : MonoBehaviour
         }
         else
         {
-            // Apply friction to gradually reduce speed
+            // Aplica fricción
             rb.linearVelocity = new Vector3(
                 rb.linearVelocity.x * (1 / (1 + friction * Time.fixedDeltaTime)),
                 0,
@@ -90,26 +76,9 @@ public class Movement : MonoBehaviour
 
         if (decelerating)
         {
-            if (localVelocity.z > 0) 
-            {
-                Brake(); 
-            }
-            else 
-            {
-                rb.linearVelocity -= speed * forwardDirection * Time.fixedDeltaTime;
-            }
-        }
-        if (frenoMano)
-        {
             if (localVelocity.z > 0)
             {
-                // aplico freno
-                BrakeMano();
-
-                // aplico giro adicional
-                rb.AddTorque(rotationInput * BrakeManorotationSpeed * transform.up * Time.fixedDeltaTime);
-                
-
+                Brake();
             }
             else
             {
@@ -117,18 +86,59 @@ public class Movement : MonoBehaviour
             }
         }
 
-       
+        if (frenoMano)
+        {
+            if (localVelocity.z > 0)
+            {
+                BrakeMano();
+                rb.AddTorque(rotationInput * BrakeManorotationSpeed * transform.up * Time.fixedDeltaTime);
+
+                // Activar el trail
+                if (!trail.emitting)
+                {
+                    trail.emitting = true;
+                }
+            }
+            else
+            {
+                rb.linearVelocity -= speed * forwardDirection * Time.fixedDeltaTime;
+            }
+        }
+        else
+        {
+            // Desactivar el trail cuando se suelta el freno de mano
+            if (trail.emitting)
+            {
+                trail.emitting = false;
+            }
+        }
+
         if (rb.linearVelocity.magnitude > maxSpeed)
         {
             rb.linearVelocity = rb.linearVelocity.normalized * maxSpeed;
         }
-        
+
         if (rb.angularVelocity.magnitude > maxRotationSpeed)
         {
             rb.angularVelocity = rb.angularVelocity.normalized * maxRotationSpeed;
         }
     }
+    
+    private void OnTriggerEnter(Collider collision)
+    {
+        if (collision.CompareTag("obstaculo"))
+        {
+           print( "¡Fin del juego!");
+            mensajeFin.gameObject.SetActive(true);
 
+        }
+        if (collision.CompareTag("puntos"))
+        {
+            print("punto obtenido");
+            
+        }
+    }
+  
     void Brake()
     {
         rb.linearVelocity = new Vector3(
@@ -137,6 +147,7 @@ public class Movement : MonoBehaviour
             rb.linearVelocity.z * (1 / (1 + brakeForce * Time.fixedDeltaTime))
         );
     }
+
     void BrakeMano()
     {
         rb.linearVelocity = new Vector3(
@@ -144,10 +155,11 @@ public class Movement : MonoBehaviour
             0,
             rb.linearVelocity.z * (1 / (1 + frenoDeMano * Time.fixedDeltaTime))
         );
-
-
     }
 }
+
+
+
 
 
 
