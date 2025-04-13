@@ -1,16 +1,26 @@
 using UnityEngine;
 
-public class objetoReciolectable : MonoBehaviour
+public class Punto : MonoBehaviour
 {
-    
-    void Start()
+    [SerializeField] private float velocidadRotacion = 100f; 
+
+    private void Update()
     {
         
+        transform.Rotate(Vector3.up * velocidadRotacion * Time.deltaTime);
     }
 
-    
-    void Update()
+    private void OnTriggerEnter(Collider collision)
     {
-        
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            GameEvents.puntosRecolectados.Invoke(); 
+            Destroy(gameObject); 
+        }
     }
 }
+
+
+
+
+

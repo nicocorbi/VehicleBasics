@@ -1,7 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Movement : MonoBehaviour
 {
@@ -24,19 +24,33 @@ public class Movement : MonoBehaviour
 
     private float rotationInput;
 
+    private bool juegoTerminado = false;
+    private bool puedeReiniciar = false;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+
     }
 
     void Update()
     {
+        if (juegoTerminado)
+        {
+            if (puedeReiniciar && Input.GetKeyDown(KeyCode.Space))
+            {
+                ReiniciarJuego();
+            }
+            return;
+        }
+
         movementWithInput();
-       
     }
 
     void FixedUpdate()
     {
+        if (juegoTerminado) return;
+
         MovementPhysics();
     }
 
@@ -66,7 +80,6 @@ public class Movement : MonoBehaviour
         }
         else
         {
-            // Aplica fricción
             rb.linearVelocity = new Vector3(
                 rb.linearVelocity.x * (1 / (1 + friction * Time.fixedDeltaTime)),
                 0,
@@ -93,7 +106,6 @@ public class Movement : MonoBehaviour
                 BrakeMano();
                 rb.AddTorque(rotationInput * BrakeManorotationSpeed * transform.up * Time.fixedDeltaTime);
 
-                // Activar el trail
                 if (!trail.emitting)
                 {
                     trail.emitting = true;
@@ -106,7 +118,6 @@ public class Movement : MonoBehaviour
         }
         else
         {
-            // Desactivar el trail cuando se suelta el freno de mano
             if (trail.emitting)
             {
                 trail.emitting = false;
@@ -123,22 +134,28 @@ public class Movement : MonoBehaviour
             rb.angularVelocity = rb.angularVelocity.normalized * maxRotationSpeed;
         }
     }
-    
+
     private void OnTriggerEnter(Collider collision)
     {
         if (collision.CompareTag("obstaculo"))
         {
-           print( "¡Fin del juego!");
+            Debug.Log("¡Fin del juego!");
             mensajeFin.gameObject.SetActive(true);
+            juegoTerminado = true;
+            rb.isKinematic = true;  // Desactivar la física del jugador
 
-        }
-        if (collision.CompareTag("puntos"))
-        {
-            print("punto obtenido");
-            
+            // Mostrar mensaje de reinicio
+            mensajeFin.text = "Presiona Espacio para reiniciar";
+            puedeReiniciar = true;
         }
     }
-  
+
+    void ReiniciarJuego()
+    {
+        // Reiniciar la escena actual
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
     void Brake()
     {
         rb.linearVelocity = new Vector3(
@@ -157,6 +174,7 @@ public class Movement : MonoBehaviour
         );
     }
 }
+
 
 
 
